@@ -34,7 +34,7 @@ If you prefer not to set up Python manually, you can use Docker to run taskgpt i
 
 #### Prerequisites:
 
-- Docker must be installed on your machine. If you don’t have Docker, you can download it from [docker.com](https://www.docker.com/).
+- Docker must be installed on your machine. If you don't have Docker, you can download it from [docker.com](https://www.docker.com/).
 
 #### Steps to use Docker:
 
