@@ -12,6 +12,7 @@ except ImportError:
     subprocess.run([sys.executable, "-m", "pip", "install", "python-dotenv"], check=True)
     from dotenv import load_dotenv
 
+
 def install_packages():
     """Install required Python packages."""
     print("📦 Installing required packages...")
@@ -23,17 +24,18 @@ def install_packages():
         return False
     return True
 
-def get_or_set_api_key():
-    """Check for OPENAI_API_KEY and prompt to create a .env file if missing."""
+
+def get_or_set_api_key(key_name):
+    """Check for required API key and prompt to create a .env file if missing."""
     load_dotenv()
-    api_key = os.getenv("OPENAI_API_KEY")
+    api_key = os.getenv(key_name)
 
     if api_key:
-        print("✅ OpenAI API key found in environment variables.")
+        print(f"✅ {key_name} found in environment variables.")
         return True
 
-    print("⚠️  OpenAI API key not found.")
-    user_input = input("Enter your OpenAI API key (or press Enter to skip): ").strip()
+    print(f"⚠️  {key_name} not found.")
+    user_input = input(f"Enter your {key_name} (or press Enter to skip): ").strip()
     if not user_input:
         print("❌ API key is required to proceed.")
         return False
@@ -41,8 +43,8 @@ def get_or_set_api_key():
     env_path = Path(".env")
     try:
         with env_path.open("a") as f:
-            f.write(f"\nOPENAI_API_KEY={user_input}\n")
-        print(f"✅ API key saved to {env_path.resolve()}")
+            f.write(f"\n{key_name}={user_input}\n")
+        print(f"✅ {key_name} saved to {env_path.resolve()}")
     except Exception as e:
         print(f"❌ Failed to write to .env file: {e}")
         return False
@@ -59,14 +61,14 @@ def setup():
     if not install_packages():
         return False
 
-    if not get_or_set_api_key():
-        return False
+    # Prompt for both keys, but not mandatory to have both
+    get_or_set_api_key("GEMINI_API_KEY")
+    get_or_set_api_key("OPENAI_API_KEY")
 
-    SETUP_MARKER.write_text("setup done") 
+    SETUP_MARKER.write_text("setup done")
     print("\n✅ Setup complete!")
     return True
 
 
 def run_setup_if_needed():
     setup()
-
