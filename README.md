@@ -1,4 +1,3 @@
-
 # CodeGPT
 
 CodeGPT is a command-line tool that allows you to interact with OpenAI's GPT models locally, powered by Python. It provides an easy-to-use interface to manage and run GPT-based agents, and it automatically handles environment setup, including dependencies and API keys.
@@ -18,27 +17,30 @@ CodeGPT is a command-line tool that allows you to interact with OpenAI's GPT mod
 
 You can install CodeGPT directly from PyPI or GitHub:
 
-1. **Install via PyPI** (if published on PyPI):
+1. **Install via PyPI**:
+
    ```bash
    pip install codegpt
    ```
 
-2. **Install via GitHub** (if hosted on GitHub):
+2. **Install via GitHub**:
    ```bash
-   pip install git+https://github.com/your-username/codegpt.git
+   pip install https://github.com/KetanHegde/codeGPT.git
    ```
 
 ### **Option 2: Run using Docker**
 
-If you prefer not to set up Python manually, you can use Docker to run CodeGPT in an isolated environment. 
+If you prefer not to set up Python manually, you can use Docker to run CodeGPT in an isolated environment.
 
 #### Prerequisites:
+
 - Docker must be installed on your machine. If you don’t have Docker, you can download it from [docker.com](https://www.docker.com/).
 
 #### Steps to use Docker:
 
 1. **Build the Docker Image**:
    In the project root directory, run:
+
    ```bash
    docker build -t codegpt .
    ```
@@ -60,6 +62,7 @@ This will start the tool in the Docker container, automatically installing depen
 Once installed, you can use the `codegpt` command in the terminal.
 
 1. **Start the agent**:
+
    ```bash
    codegpt
    ```
@@ -78,7 +81,7 @@ To contribute to this project, follow the steps below to set up a local developm
 ### Clone the repository:
 
 ```bash
-git clone https://github.com/your-username/codegpt.git
+git clone https://github.com/KetanHegde/codeGPT.git
 ```
 
 ### Create a virtual environment (optional but recommended):
