@@ -25,7 +25,7 @@ You can install taskgpt directly from PyPI or GitHub:
 
 2. **Install via GitHub**:
    ```bash
-   pip install https://github.com/KetanHegde/taskGPT.git
+   pip install git+https://github.com/KetanHegde/taskGPT.git
    ```
 
 ### **Option 2: Run using Docker**
