@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import os
 import sys
 import subprocess
@@ -6,6 +8,7 @@ import argparse
 import requests
 import re
 import platform
+import time
 from typing import List, Dict, Any, Optional, Tuple
 from dotenv import load_dotenv
 
@@ -20,6 +23,8 @@ class TaskAgent:
         self.api_type = api_type
         self.api_key = self._get_api_key()
         self.is_windows = platform.system() == "Windows"
+        self.error_recovery_attempts = 0
+        self.max_recovery_attempts = 3
 
     def _get_api_key(self) -> str:
         if self.api_type == "openai":
@@ -239,11 +244,98 @@ class TaskAgent:
             elif response in ['n', 'no']:
                 return False
 
+    def diagnose_error(self, error_message: str, command: str, step_description: str) -> str:
+        """Use AI to diagnose error and suggest a fix."""
+        print("\n🔍 Diagnosing error...")
+        
+        prompt = f"""
+        You are a helpful debugging assistant. A command has failed during execution.
+        
+        Command: {command}
+        Step Description: {step_description}
+        Error Output: {error_message}
+        
+        Please analyze the error and provide:
+        1. A brief explanation of what went wrong
+        2. A concrete solution to fix the issue
+        3. The exact command(s) needed to resolve the problem
+        
+        Format your response as a JSON object with keys:
+        - "explanation": Brief description of the error
+        - "solution": How to fix it
+        - "commands": Array of commands to execute to fix the issue
+        
+        Example:
+        {{
+            "explanation": "The C compiler is not finding the math library.",
+            "solution": "Need to explicitly link the math library with -lm flag",
+            "commands": ["gcc -o program program.c -lm"]
+        }}
+        
+        Return ONLY the JSON object and no other text.
+        """
+        
+        if self.api_type == "openai":
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {self.api_key}"
+            }
+            payload = {
+                "model": "gpt-3.5-turbo",
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.2
+            }
+            response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
+            if response.status_code != 200:
+                print(f"Error: API returned status code {response.status_code}")
+                return None
+            result = response.json()
+            content = result["choices"][0]["message"]["content"]
+            
+        elif self.api_type == "gemini":
+            headers = {"Content-Type": "application/json"}
+            payload = {
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {
+                    "temperature": 0.2,
+                    "topK": 32,
+                    "topP": 1,
+                    "maxOutputTokens": 1024
+                }
+            }
+            
+            model = "gemini-2.0-flash"
+            api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={self.api_key}"
+            
+            response = requests.post(api_url, headers=headers, json=payload)
+            if response.status_code != 200:
+                print(f"Error: API returned status code {response.status_code}")
+                return None
+                
+            result = response.json()
+            content = result["candidates"][0]["content"]["parts"][0]["text"]
+        
+        try:
+            # Extract JSON from response
+            json_match = re.search(r'{.*}', content, re.DOTALL)
+            if json_match:
+                content = json_match.group(0)
+            content = content.replace("```json", "").replace("```", "").strip()
+            diagnosis = json.loads(content)
+            return diagnosis
+        except (json.JSONDecodeError, KeyError) as e:
+            print(f"Error parsing API diagnosis response: {e}")
+            print(f"Raw response: {content}")
+            return None
+
     def execute_plan(self, plan: List[Dict[str, str]]) -> List[Tuple[Dict[str, str], bool, str]]:
         results = []
-        for i, step in enumerate(plan, 1):
+        current_step = 0
+        
+        while current_step < len(plan):
+            step = plan[current_step]
             command = step['command']
-            print(f"\nExecuting Step {i}: {step['description']}")
+            print(f"\nExecuting Step {current_step + 1}: {step['description']}")
             
             # Handle special file writing command
             if command.startswith("WRITE_FILE:"):
@@ -257,13 +349,23 @@ class TaskAgent:
                         print(f"✅ Successfully created {filename}")
                         results.append((step, True, f"Created {filename}"))
                     else:
-                        print(f"❌ Failed to create {filename}")
-                        results.append((step, False, f"Failed to create {filename}"))
-                        break
+                        error_msg = f"Failed to create {filename}"
+                        print(f"❌ {error_msg}")
+                        
+                        # Attempt error recovery
+                        if not self.attempt_recovery(error_msg, command, step['description']):
+                            results.append((step, False, error_msg))
+                            break
+                        continue
                 else:
-                    print(f"❌ Invalid WRITE_FILE command format")
-                    results.append((step, False, "Invalid WRITE_FILE command format"))
-                    break
+                    error_msg = "Invalid WRITE_FILE command format"
+                    print(f"❌ {error_msg}")
+                    
+                    # Attempt error recovery
+                    if not self.attempt_recovery(error_msg, command, step['description']):
+                        results.append((step, False, error_msg))
+                        break
+                    continue
             else:
                 # Regular command execution
                 print(f"Command: {command}")
@@ -282,34 +384,133 @@ class TaskAgent:
                         )
                         process.wait()
                         print("--- Program Output End ---\n")
-                        results.append((step, process.returncode == 0, "Interactive execution"))
+                        
                         if process.returncode != 0:
-                            print(f"❌ Program exited with code {process.returncode}")
-                            break
+                            error_msg = f"Program exited with code {process.returncode}"
+                            print(f"❌ {error_msg}")
+                            
+                            # Attempt error recovery
+                            if not self.attempt_recovery(error_msg, command, step['description']):
+                                results.append((step, False, error_msg))
+                                break
+                            continue
+                        
+                        results.append((step, True, "Interactive execution"))
                     else:
                         # Standard command execution for non-program commands
-                        output = subprocess.run(
+                        process = subprocess.run(
                             command, 
                             shell=True, 
-                            check=True, 
                             text=True, 
                             capture_output=True
                         )
-                        print(f"✅ Success")
-                        if output.stdout.strip():
-                            print("Output:")
-                            for line in output.stdout.strip().split('\n'):
+                        
+                        if process.returncode != 0:
+                            error_msg = process.stderr if process.stderr else f"Command failed with exit code {process.returncode}"
+                            print(f"❌ Error executing command:")
+                            for line in error_msg.strip().split('\n'):
                                 print(f"  {line}")
-                        results.append((step, True, output.stdout))
-                except subprocess.CalledProcessError as e:
-                    print(f"❌ Error executing command:")
-                    if e.stderr:
-                        for line in e.stderr.strip().split('\n'):
-                            print(f"  {line}")
-                    results.append((step, False, e.stderr))
-                    break
+                                
+                            # Attempt error recovery
+                            if not self.attempt_recovery(error_msg, command, step['description']):
+                                results.append((step, False, error_msg))
+                                break
+                            continue
+                            
+                        print(f"✅ Success")
+                        if process.stdout.strip():
+                            print("Output:")
+                            for line in process.stdout.strip().split('\n'):
+                                print(f"  {line}")
+                        results.append((step, True, process.stdout))
+                except Exception as e:
+                    error_msg = str(e)
+                    print(f"❌ Exception: {error_msg}")
+                    
+                    # Attempt error recovery
+                    if not self.attempt_recovery(error_msg, command, step['description']):
+                        results.append((step, False, error_msg))
+                        break
+                    continue
+            
+            # Move to next step on success
+            current_step += 1
+            # Reset error recovery counter on successful step
+            self.error_recovery_attempts = 0
                 
         return results
+    
+    def attempt_recovery(self, error_message: str, command: str, step_description: str) -> bool:
+        """Attempt to recover from an error by analyzing and fixing it."""
+        if self.error_recovery_attempts >= self.max_recovery_attempts:
+            print(f"⚠️ Maximum recovery attempts ({self.max_recovery_attempts}) reached. Moving to manual intervention.")
+            return False
+            
+        self.error_recovery_attempts += 1
+        print(f"\n🔧 Attempting recovery (attempt {self.error_recovery_attempts}/{self.max_recovery_attempts})...")
+        
+        # Get AI diagnosis and fix
+        diagnosis = self.diagnose_error(error_message, command, step_description)
+        if not diagnosis:
+            print("❌ Failed to diagnose the error.")
+            return False
+            
+        # Show diagnosis
+        print("\n📊 Error Diagnosis:")
+        print(f"  Problem: {diagnosis.get('explanation', 'Unknown error')}")
+        print(f"  Solution: {diagnosis.get('solution', 'No solution provided')}")
+        
+        # Check if we have commands to execute
+        fix_commands = diagnosis.get('commands', [])
+        if not fix_commands:
+            print("❌ No fix commands provided.")
+            return False
+        
+        # Ask for approval to execute fix commands
+        print("\n🛠️ Proposed Fix Commands:")
+        for i, cmd in enumerate(fix_commands, 1):
+            print(f"  {i}. {cmd}")
+            
+        response = input("\nExecute these commands to fix the issue? (y/n): ").strip().lower()
+        if response not in ['y', 'yes']:
+            print("❌ Fix rejected.")
+            return False
+            
+        # Execute fix commands
+        print("\n🔄 Executing fix commands...")
+        for i, cmd in enumerate(fix_commands, 1):
+            print(f"\nFix Command {i}: {cmd}")
+            try:
+                if cmd.startswith("WRITE_FILE:"):
+                    parts = cmd.split(':', 2)
+                    if len(parts) >= 3:
+                        filename = parts[1]
+                        content = parts[2]
+                        print(f"Writing content to {filename}")
+                        if self._write_file(filename, content):
+                            print(f"✅ Successfully created/updated {filename}")
+                        else:
+                            print(f"❌ Failed to create/update {filename}")
+                            return False
+                else:
+                    process = subprocess.run(cmd, shell=True, text=True, capture_output=True)
+                    if process.returncode != 0:
+                        print(f"❌ Fix command failed: {process.stderr}")
+                        return False
+                    print(f"✅ Success")
+                    if process.stdout.strip():
+                        print("Output:")
+                        for line in process.stdout.strip().split('\n'):
+                            print(f"  {line}")
+            except Exception as e:
+                print(f"❌ Exception running fix command: {e}")
+                return False
+                
+        print("\n✅ Recovery attempt complete. Retrying the original step...")
+        # Reset this attempt since we're about to retry
+        self.error_recovery_attempts -= 1
+        time.sleep(1)  # Brief pause to let user read messages
+        return True
     
     def _is_program_execution(self, command: str) -> bool:
         """Check if the command is executing a program rather than a shell command."""
@@ -370,9 +571,10 @@ class TaskAgent:
             else:
                 print("✅ Task completed successfully!")
 
-def main():
+def run():
     parser = argparse.ArgumentParser(description='AI Task Agent')
     parser.add_argument('--api', type=str, default=DEFAULT_API, help=f'API to use (default: {DEFAULT_API})')
+    parser.add_argument('--max-recovery', type=int, default=3, help='Maximum number of recovery attempts per error')
     args = parser.parse_args()
 
     print("=" * 50)
@@ -381,6 +583,7 @@ def main():
 
     try:
         agent = TaskAgent(api_type=args.api)
+        agent.max_recovery_attempts = args.max_recovery
         task = input("Enter your task description: ")
         agent.run_task(task)
     except KeyboardInterrupt:
@@ -388,6 +591,3 @@ def main():
     except Exception as e:
         print(f"Error: {e}")
         sys.exit(1)
-
-if __name__ == "__main__":
-    main()
