@@ -2,7 +2,7 @@
 FROM python:3.11-slim
 
 # Set working directory
-WORKDIR /app
+WORKDIR /codegpt
 
 # Install OS-level dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -10,24 +10,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy project files
+# Copy project files into the container
 COPY . .
 
 # Set environment variable to avoid prompts during installation
 ENV PIP_NO_INPUT=1
 
-# Create a virtual environment and activate it
+# Create and activate a virtual environment
 RUN python -m venv /venv
 
-# Install dependencies using the venv's pip
+# Install project dependencies
 RUN /venv/bin/pip install --upgrade pip setuptools wheel \
  && /venv/bin/pip install .
 
-# Expose the virtual environment in the PATH
+# Ensure the virtual environment is in the PATH
 ENV PATH="/venv/bin:$PATH"
 
-# Run setup script to initialize env variables and configuration
+# Run the setup script (to initialize environment or install extra deps)
 RUN python setup.py
 
-# Entry point for the CLI tool
+# Set the CLI entry point
 ENTRYPOINT ["codegpt"]
