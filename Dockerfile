@@ -1,14 +1,8 @@
 # Base image with Python
-FROM python:3.11-slim
+FROM python:3.14.0a7-bookworm
 
 # Set working directory
-WORKDIR /codegpt
-
-# Install OS-level dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+WORKDIR /taskgpt
 
 # Copy project files into the container
 COPY . .
@@ -27,7 +21,7 @@ RUN /venv/bin/pip install --upgrade pip setuptools wheel \
 ENV PATH="/venv/bin:$PATH"
 
 # Run the setup script (to initialize environment or install extra deps)
-RUN python setup.py
+RUN python taskgpt/setup_env.py
 
 # Set the CLI entry point
-ENTRYPOINT ["codegpt"]
+ENTRYPOINT ["taskgpt"]

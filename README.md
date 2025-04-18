@@ -1,6 +1,6 @@
-# CodeGPT
+# taskGPT
 
-CodeGPT is a command-line tool that allows you to interact with OpenAI's GPT models locally, powered by Python. It provides an easy-to-use interface to manage and run GPT-based agents, and it automatically handles environment setup, including dependencies and API keys.
+taskGPT is a command-line tool that allows you to interact with OpenAI's GPT models locally, powered by Python. It provides an easy-to-use interface to manage and run GPT-based agents, and it automatically handles environment setup, including dependencies and API keys.
 
 ## Features
 
@@ -15,22 +15,22 @@ CodeGPT is a command-line tool that allows you to interact with OpenAI's GPT mod
 
 ### **Option 1: Install via `pip`**
 
-You can install CodeGPT directly from PyPI or GitHub:
+You can install taskgpt directly from PyPI or GitHub:
 
 1. **Install via PyPI**:
 
    ```bash
-   pip install codegpt
+   pip install taskgpt
    ```
 
 2. **Install via GitHub**:
    ```bash
-   pip install https://github.com/KetanHegde/codeGPT.git
+   pip install https://github.com/KetanHegde/taskGPT.git
    ```
 
 ### **Option 2: Run using Docker**
 
-If you prefer not to set up Python manually, you can use Docker to run CodeGPT in an isolated environment.
+If you prefer not to set up Python manually, you can use Docker to run taskgpt in an isolated environment.
 
 #### Prerequisites:
 
@@ -42,13 +42,13 @@ If you prefer not to set up Python manually, you can use Docker to run CodeGPT i
    In the project root directory, run:
 
    ```bash
-   docker build -t codegpt .
+   docker build -t taskgpt .
    ```
 
 2. **Run the Docker Container**:
    After the image is built, you can run the tool as follows:
    ```bash
-   docker run -it --rm codegpt
+   docker run -it --rm taskgpt
    ```
 
 This will start the tool in the Docker container, automatically installing dependencies and running the application.
@@ -57,14 +57,14 @@ This will start the tool in the Docker container, automatically installing depen
 
 ## Usage
 
-### Running CodeGPT
+### Running taskgpt
 
-Once installed, you can use the `codegpt` command in the terminal.
+Once installed, you can use the `taskgpt` command in the terminal.
 
 1. **Start the agent**:
 
    ```bash
-   codegpt
+   taskgpt
    ```
 
 2. **Provide a task description** when prompted:
@@ -81,7 +81,7 @@ To contribute to this project, follow the steps below to set up a local developm
 ### Clone the repository:
 
 ```bash
-git clone https://github.com/KetanHegde/codeGPT.git
+git clone https://github.com/KetanHegde/taskGPT.git
 ```
 
 ### Create a virtual environment (optional but recommended):
@@ -95,10 +95,4 @@ source venv/bin/activate  # On Windows, use venv\Scripts\activate
 
 ```bash
 pip install -e .
-```
-
-### Running tests:
-
-```bash
-python -m unittest discover
 ```
