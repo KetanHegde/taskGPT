@@ -1,98 +1,95 @@
 # taskGPT
 
-taskGPT is a command-line tool that allows you to interact with OpenAI's GPT models locally, powered by Python. It provides an easy-to-use interface to manage and run GPT-based agents, and it automatically handles environment setup, including dependencies and API keys.
-
-## Features
-
-- Run GPT-based agents using a simple command-line interface (CLI).
-- Automatically installs required Python packages.
-- Automatically sets up the environment with an OpenAI API key (optional).
-- Can be easily distributed and used via Docker or `pip`.
+**taskGPT** is a Python-based command-line tool for running AI agents powered by OpenAI and Gemini models. It offers a guided setup experience, installs dependencies automatically, and configures API keys globally for seamless future use.
 
 ---
 
-## Installation
+## ✨ Features
 
-### **Option 1: Install via `pip`**
-
-You can install taskgpt directly from PyPI or GitHub:
-
-1. **Install via PyPI**:
-
-   ```bash
-   pip install taskgpt
-   ```
-
-2. **Install via GitHub**:
-   ```bash
-   pip install git+https://github.com/KetanHegde/taskGPT.git
-   ```
-
-### **Option 2: Run using Docker**
-
-If you prefer not to set up Python manually, you can use Docker to run taskgpt in an isolated environment.
-
-#### Prerequisites:
-
-- Docker must be installed on your machine. If you don't have Docker, you can download it from [docker.com](https://www.docker.com/).
-
-#### Steps to use Docker:
-
-1. **Build the Docker Image**:
-   In the project root directory, run:
-
-   ```bash
-   docker build -t taskgpt .
-   ```
-
-2. **Run the Docker Container**:
-   After the image is built, you can run the tool as follows:
-   ```bash
-   docker run -it --rm taskgpt
-   ```
-
-This will start the tool in the Docker container, automatically installing dependencies and running the application.
+- 🤖 Run GPT-based agents from your terminal with a simple command
+- 🔄 One-time setup for dependencies and API keys
+- 🔐 Supports both OpenAI and Gemini API keys
+- 💾 Persists API keys to system environment (Windows Registry / shell config)
+- ⚙️ Automatically detects setup and avoids redundant installations
+- 🐳 Docker support for isolated environments
+- 📦 Installable via PyPI or GitHub
 
 ---
 
-## Usage
+## 🚀 Installation
 
-### Running taskgpt
+### Option 1: Install via `pip`
 
-Once installed, you can use the `taskgpt` command in the terminal.
+You can install taskGPT from either PyPI or GitHub:
 
-1. **Start the agent**:
+#### 🔸 From PyPI
 
-   ```bash
-   taskgpt
-   ```
+```bash
+pip install taskgpt
+```
 
-2. **Provide a task description** when prompted:
-   ```bash
-   Enter your task description:
-   ```
+#### 🔹 From GitHub
+
+```bash
+pip install git+https://github.com/KetanHegde/taskGPT.git
+```
 
 ---
 
-## Development
+### Option 2: Run using Docker
 
-To contribute to this project, follow the steps below to set up a local development environment.
+If you prefer using containers, taskGPT works great inside Docker.
 
-### Clone the repository:
+#### 📦 Build the Docker image
+
+```bash
+docker build -t taskgpt .
+```
+
+#### 🏃 Run the container
+
+```bash
+docker run -it --rm taskgpt
+```
+
+---
+
+## 💡 Usage
+
+Once installed, run the tool using:
+
+```bash
+taskgpt
+```
+
+### First Run
+
+On the first launch, `taskgpt` will:
+
+1. Install missing Python dependencies
+2. Prompt you to enter `GEMINI_API_KEY` and/or `OPENAI_API_KEY` if not already set
+3. Save them permanently in your system environment
+4. Ask you to restart your terminal (only on first setup)
+
+Subsequent runs will skip setup and launch the agent directly.
+
+---
+
+## 🛠 Development
+
+To contribute to this project:
+
+### 🧪 Clone the repository
 
 ```bash
 git clone https://github.com/KetanHegde/taskGPT.git
+cd taskGPT
 ```
 
-### Create a virtual environment (optional but recommended):
-
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows, use venv\Scripts\activate
-```
-
-### Install dependencies:
+### 📥 Install dependencies
 
 ```bash
 pip install -e .
 ```
+
+---
