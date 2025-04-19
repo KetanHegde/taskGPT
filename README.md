@@ -1,34 +1,34 @@
 # taskGPT
 
-**taskGPT** is a Python-based command-line tool for running AI agents powered by OpenAI and Gemini models. It offers a guided setup experience, installs dependencies automatically, and configures API keys globally for seamless future use.
+taskGPT is a Python-based command-line tool for running AI agents powered by OpenAI and Gemini models. It offers a guided setup experience, installs dependencies automatically, and configures API keys globally for seamless future use.
 
 ---
 
-## ✨ Features
+## Features
 
-- 🤖 Run GPT-based agents from your terminal with a simple command
-- 🔄 One-time setup for dependencies and API keys
-- 🔐 Supports both OpenAI and Gemini API keys
-- 💾 Persists API keys to system environment (Windows Registry / shell config)
-- ⚙️ Automatically detects setup and avoids redundant installations
-- 🐳 Docker support for isolated environments
-- 📦 Installable via PyPI or GitHub
+- Run GPT-based agents from your terminal with a simple command
+- One-time setup for dependencies and API keys
+- Supports both OpenAI and Gemini API keys
+- Persists API keys to system environment (Windows Registry / shell config)
+- Automatically detects setup and avoids redundant installations
+- Docker support for isolated environments
+- Installable via PyPI or GitHub
 
 ---
 
-## 🚀 Installation
+## Installation
 
 ### Option 1: Install via `pip`
 
 You can install taskGPT from either PyPI or GitHub:
 
-#### 🔸 From PyPI
+#### From PyPI
 
 ```bash
 pip install taskgpt
 ```
 
-#### 🔹 From GitHub
+#### From GitHub
 
 ```bash
 pip install git+https://github.com/KetanHegde/taskGPT.git
@@ -40,13 +40,13 @@ pip install git+https://github.com/KetanHegde/taskGPT.git
 
 If you prefer using containers, taskGPT works great inside Docker.
 
-#### 📦 Build the Docker image
+#### Build the Docker image
 
 ```bash
 docker build -t taskgpt .
 ```
 
-#### 🏃 Run the container
+#### Run the container
 
 ```bash
 docker run -it --rm taskgpt
@@ -54,7 +54,7 @@ docker run -it --rm taskgpt
 
 ---
 
-## 💡 Usage
+## Usage
 
 Once installed, run the tool using:
 
@@ -75,18 +75,18 @@ Subsequent runs will skip setup and launch the agent directly.
 
 ---
 
-## 🛠 Development
+## Development
 
 To contribute to this project:
 
-### 🧪 Clone the repository
+### Clone the repository
 
 ```bash
 git clone https://github.com/KetanHegde/taskGPT.git
 cd taskGPT
 ```
 
-### 📥 Install dependencies
+### Install dependencies
 
 ```bash
 pip install -e .
