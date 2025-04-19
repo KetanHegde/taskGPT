@@ -20,8 +20,5 @@ RUN /venv/bin/pip install --upgrade pip setuptools wheel \
 # Ensure the virtual environment is in the PATH
 ENV PATH="/venv/bin:$PATH"
 
-# Run the setup script (to initialize environment or install extra deps)
-RUN python taskgpt/setup_env.py
-
 # Set the CLI entry point
 ENTRYPOINT ["taskgpt"]

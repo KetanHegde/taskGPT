@@ -15,6 +15,8 @@ from typing import List, Dict, Any, Optional, Tuple
 # Default to Gemini
 DEFAULT_API = "gemini"
 
+__version__ = "0.1.5"
+
 class TaskAgent:
     def __init__(self, api_type: str = DEFAULT_API):
         self.api_type = api_type
@@ -616,6 +618,7 @@ class TaskAgent:
 
 def run():
     parser = argparse.ArgumentParser(description='AI Task Agent')
+    parser.add_argument('--version', action='version', version=f'%(prog)s {__version__}')
     parser.add_argument('--api', type=str, default=DEFAULT_API, help=f'API to use (default: {DEFAULT_API})')
     parser.add_argument('--max-recovery', type=int, default=3, help='Maximum number of recovery attempts per error')
     args = parser.parse_args()
