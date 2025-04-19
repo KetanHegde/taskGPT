@@ -59,7 +59,7 @@ def get_or_set_api_key(key_name):
         return False  # not newly set
 
     print(f"{key_name} not found.")
-    user_input = input(f"Enter your {key_name} (or press Enter to skip): ").strip()
+    user_input = input(f"Enter your {key_name}: ").strip()
 
     if not user_input:
         print(f"{key_name} is required to proceed.")
