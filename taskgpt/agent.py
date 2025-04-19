@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+from pathlib import Path
 import sys
 import subprocess
 import json
@@ -10,10 +11,6 @@ import re
 import platform
 import time
 from typing import List, Dict, Any, Optional, Tuple
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
 
 # Default to Gemini
 DEFAULT_API = "gemini"
@@ -21,23 +18,69 @@ DEFAULT_API = "gemini"
 class TaskAgent:
     def __init__(self, api_type: str = DEFAULT_API):
         self.api_type = api_type
-        self.api_key = self._get_api_key()
+        self.api_key = None
         self.is_windows = platform.system() == "Windows"
         self.error_recovery_attempts = 0
         self.max_recovery_attempts = 3
+        
+        # Try to get API key, asking for it if not available
+        self._get_or_prompt_api_key()
 
-    def _get_api_key(self) -> str:
+    def _get_or_prompt_api_key(self) -> None:
+        """Get API key from environment or prompt user for it."""
         if self.api_type == "openai":
-            api_key = os.getenv("OPENAI_API_KEY")
-            if not api_key:
-                raise ValueError("OPENAI_API_KEY not set. Please add it to your .env file.")
-            return api_key
+            env_key = "OPENAI_API_KEY"
         elif self.api_type == "gemini":
-            api_key = os.getenv("GEMINI_API_KEY")
+            env_key = "GEMINI_API_KEY"
+        else:
+            raise ValueError(f"Unsupported API type: {self.api_type}")
+            
+        # Check environment variable
+        api_key = os.getenv(env_key)
+        
+        # If not found, prompt user
+        if not api_key:
+            print(f"{env_key} not found in environment variables.")
+            api_key = input(f"Please enter your {self.api_type.capitalize()} API key: ").strip()
+            
             if not api_key:
-                raise ValueError("GEMINI_API_KEY not set. Please add it to your .env file.")
-            return api_key
-        raise ValueError(f"Unsupported API type: {self.api_type}")
+                raise ValueError(f"No API key provided for {self.api_type}.")
+            
+            # Set it in the environment for this session
+            os.environ[env_key] = api_key
+            print(f"{env_key} has been set for this session.")
+            
+            # Ask if user wants to save it permanently
+            save_response = input("Do you want to save this API key permanently to your environment? (y/n): ").strip().lower()
+            if save_response in ['y', 'yes']:
+                self._save_api_key_to_environment(env_key, api_key)
+        
+        self.api_key = api_key
+
+    def _save_api_key_to_environment(self, env_key: str, api_key: str) -> None:
+        """Attempt to save API key to the user's environment."""
+        try:
+            if self.is_windows:
+                # Windows: Use setx command
+                subprocess.run(["setx", env_key, api_key], check=True, capture_output=True)
+                print(f"{env_key} has been saved to your Windows environment.")
+                print("Note: You may need to restart your terminal for the changes to take effect.")
+            else:
+                # Unix-like: Add to .bashrc or .zshrc
+                shell = os.environ.get("SHELL", "").lower()
+                if "zsh" in shell:
+                    profile_file = os.path.expanduser("~/.zshrc")
+                else:
+                    profile_file = os.path.expanduser("~/.bashrc")
+                    
+                with open(profile_file, "a") as f:
+                    f.write(f'\n# Added by AI Task Agent\nexport {env_key}="{api_key}"\n')
+                    
+                print(f"{env_key} has been added to {profile_file}")
+                print("Note: Run 'source " + profile_file + "' or restart your terminal for the changes to take effect.")
+        except Exception as e:
+            print(f"Could not automatically save API key: {e}")
+            print(f"You can manually add it by setting the {env_key} environment variable.")
 
     def generate_plan(self, task_description: str, feedback: Optional[str] = None) -> List[Dict[str, str]]:
         context = task_description
@@ -212,7 +255,7 @@ class TaskAgent:
             return False
 
     def display_plan(self, plan: List[Dict[str, str]]) -> None:
-        print("\n📋 Generated Task Plan:")
+        print("\nGenerated Task Plan:")
         print("=" * 50)
         for i, step in enumerate(plan, 1):
             print(f"Step {i}:")
@@ -246,7 +289,7 @@ class TaskAgent:
 
     def diagnose_error(self, error_message: str, command: str, step_description: str) -> str:
         """Use AI to diagnose error and suggest a fix."""
-        print("\n🔍 Diagnosing error...")
+        print("\nDiagnosing error...")
         
         prompt = f"""
         You are a helpful debugging assistant. A command has failed during execution.
@@ -346,11 +389,11 @@ class TaskAgent:
                     print(f"Writing content to {filename}")
                     success = self._write_file(filename, content)
                     if success:
-                        print(f"✅ Successfully created {filename}")
+                        print(f"Successfully created {filename}")
                         results.append((step, True, f"Created {filename}"))
                     else:
                         error_msg = f"Failed to create {filename}"
-                        print(f"❌ {error_msg}")
+                        print(f"{error_msg}")
                         
                         # Attempt error recovery
                         if not self.attempt_recovery(error_msg, command, step['description']):
@@ -359,7 +402,7 @@ class TaskAgent:
                         continue
                 else:
                     error_msg = "Invalid WRITE_FILE command format"
-                    print(f"❌ {error_msg}")
+                    print(f"{error_msg}")
                     
                     # Attempt error recovery
                     if not self.attempt_recovery(error_msg, command, step['description']):
@@ -387,7 +430,7 @@ class TaskAgent:
                         
                         if process.returncode != 0:
                             error_msg = f"Program exited with code {process.returncode}"
-                            print(f"❌ {error_msg}")
+                            print(f"{error_msg}")
                             
                             # Attempt error recovery
                             if not self.attempt_recovery(error_msg, command, step['description']):
@@ -407,7 +450,7 @@ class TaskAgent:
                         
                         if process.returncode != 0:
                             error_msg = process.stderr if process.stderr else f"Command failed with exit code {process.returncode}"
-                            print(f"❌ Error executing command:")
+                            print(f"Error executing command:")
                             for line in error_msg.strip().split('\n'):
                                 print(f"  {line}")
                                 
@@ -417,7 +460,7 @@ class TaskAgent:
                                 break
                             continue
                             
-                        print(f"✅ Success")
+                        print(f"Success")
                         if process.stdout.strip():
                             print("Output:")
                             for line in process.stdout.strip().split('\n'):
@@ -425,7 +468,7 @@ class TaskAgent:
                         results.append((step, True, process.stdout))
                 except Exception as e:
                     error_msg = str(e)
-                    print(f"❌ Exception: {error_msg}")
+                    print(f"Exception: {error_msg}")
                     
                     # Attempt error recovery
                     if not self.attempt_recovery(error_msg, command, step['description']):
@@ -443,41 +486,41 @@ class TaskAgent:
     def attempt_recovery(self, error_message: str, command: str, step_description: str) -> bool:
         """Attempt to recover from an error by analyzing and fixing it."""
         if self.error_recovery_attempts >= self.max_recovery_attempts:
-            print(f"⚠️ Maximum recovery attempts ({self.max_recovery_attempts}) reached. Moving to manual intervention.")
+            print(f"Maximum recovery attempts ({self.max_recovery_attempts}) reached. Moving to manual intervention.")
             return False
             
         self.error_recovery_attempts += 1
-        print(f"\n🔧 Attempting recovery (attempt {self.error_recovery_attempts}/{self.max_recovery_attempts})...")
+        print(f"\nAttempting recovery (attempt {self.error_recovery_attempts}/{self.max_recovery_attempts})...")
         
         # Get AI diagnosis and fix
         diagnosis = self.diagnose_error(error_message, command, step_description)
         if not diagnosis:
-            print("❌ Failed to diagnose the error.")
+            print("Failed to diagnose the error.")
             return False
             
         # Show diagnosis
-        print("\n📊 Error Diagnosis:")
+        print("\nError Diagnosis:")
         print(f"  Problem: {diagnosis.get('explanation', 'Unknown error')}")
         print(f"  Solution: {diagnosis.get('solution', 'No solution provided')}")
         
         # Check if we have commands to execute
         fix_commands = diagnosis.get('commands', [])
         if not fix_commands:
-            print("❌ No fix commands provided.")
+            print("No fix commands provided.")
             return False
         
         # Ask for approval to execute fix commands
-        print("\n🛠️ Proposed Fix Commands:")
+        print("\nProposed Fix Commands:")
         for i, cmd in enumerate(fix_commands, 1):
             print(f"  {i}. {cmd}")
             
         response = input("\nExecute these commands to fix the issue? (y/n): ").strip().lower()
         if response not in ['y', 'yes']:
-            print("❌ Fix rejected.")
+            print("Fix rejected.")
             return False
             
         # Execute fix commands
-        print("\n🔄 Executing fix commands...")
+        print("\nExecuting fix commands...")
         for i, cmd in enumerate(fix_commands, 1):
             print(f"\nFix Command {i}: {cmd}")
             try:
@@ -488,25 +531,25 @@ class TaskAgent:
                         content = parts[2]
                         print(f"Writing content to {filename}")
                         if self._write_file(filename, content):
-                            print(f"✅ Successfully created/updated {filename}")
+                            print(f"Successfully created/updated {filename}")
                         else:
-                            print(f"❌ Failed to create/update {filename}")
+                            print(f"Failed to create/update {filename}")
                             return False
                 else:
                     process = subprocess.run(cmd, shell=True, text=True, capture_output=True)
                     if process.returncode != 0:
-                        print(f"❌ Fix command failed: {process.stderr}")
+                        print(f"Fix command failed: {process.stderr}")
                         return False
-                    print(f"✅ Success")
+                    print(f"Success")
                     if process.stdout.strip():
                         print("Output:")
                         for line in process.stdout.strip().split('\n'):
                             print(f"  {line}")
             except Exception as e:
-                print(f"❌ Exception running fix command: {e}")
+                print(f"Exception running fix command: {e}")
                 return False
                 
-        print("\n✅ Recovery attempt complete. Retrying the original step...")
+        print("\nRecovery attempt complete. Retrying the original step...")
         # Reset this attempt since we're about to retry
         self.error_recovery_attempts -= 1
         time.sleep(1)  # Brief pause to let user read messages
@@ -554,7 +597,7 @@ class TaskAgent:
         success = False
 
         while not success:
-            print(f"\n🤖 Processing task: {task_description}")
+            print(f"\nProcessing task: {task_description}")
             plan = self.generate_plan(task_description, feedback)
             if not plan:
                 print("Failed to generate a plan. Please try again with a clearer task description.")
@@ -569,7 +612,7 @@ class TaskAgent:
                 feedback = self.get_feedback()
                 print("Refining approach based on feedback...")
             else:
-                print("✅ Task completed successfully!")
+                print("Task completed successfully!")
 
 def run():
     parser = argparse.ArgumentParser(description='AI Task Agent')
