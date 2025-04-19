@@ -48,9 +48,42 @@ docker build -t taskgpt .
 
 #### Run the container
 
+
+##### Unix/Linux
+
 ```bash
-docker run -it --rm -e OPENAI_API_KEY=your-openai-key -e GEMINI_API_KEY=your-gemini-key taskgpt
+docker run -it --rm \
+  -v "$PWD":/app \
+  -w /app \
+  -e OPENAI_API_KEY=your-openai-key \
+  -e GEMINI_API_KEY=your-gemini-key \
+  taskgpt
 ```
+
+
+##### Windows CMD
+
+```bash
+docker run -it --rm ^
+  -v "%cd%":/app ^
+  -w /app ^
+  -e OPENAI_API_KEY=your-openai-key ^
+  -e GEMINI_API_KEY=your-gemini-key ^
+  taskgpt
+```
+
+
+##### Windows Powershell
+
+```bash
+docker run -it --rm `
+  -v "${PWD}:/app" `
+  -w /app `
+  -e OPENAI_API_KEY=your-openai-key `
+  -e GEMINI_API_KEY=your-gemini-key `
+  taskgpt
+```
+
 
 ---
 
