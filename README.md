@@ -49,7 +49,7 @@ docker build -t taskgpt .
 #### Run the container
 
 ```bash
-docker run -it --rm taskgpt
+docker run -it --rm -e OPENAI_API_KEY=your-openai-key -e GEMINI_API_KEY=your-gemini-key taskgpt
 ```
 
 ---

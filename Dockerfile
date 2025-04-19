@@ -1,5 +1,5 @@
 # Base image with Python
-FROM python:3.14.0a7-bookworm
+FROM python
 
 # Set working directory
 WORKDIR /taskgpt
