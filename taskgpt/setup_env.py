@@ -111,7 +111,7 @@ def setup():
         newly_set = True
 
     if newly_set:
-        print("\nSetup complete! \n\nnPlease restart your terminal for environment variable changes to take effect!!!\n")
+        print("\nSetup complete! \n\nPlease restart your terminal for environment variable changes to take effect!!!\n")
         return True  # Needs restart
 
     return False  # Already set before
